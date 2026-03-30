@@ -1,8 +1,0 @@
-/STURM-flood
-/STURM-fusion*
-/Dataset
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyc
