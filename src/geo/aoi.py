@@ -12,3 +12,22 @@ def get_aoi_from_tif(tif_path):
     )
 
     return ee.Geometry.Rectangle([left, bottom, right, top])
+
+def get_tif_export_grid(tif_path):
+    with rasterio.open(tif_path) as src:
+        transform = src.transform
+        crs = src.crs.to_string()
+        width = src.width
+        height = src.height
+        bounds = src.bounds
+
+    return {
+        "crs": crs,
+        "transform": [
+            transform.a, transform.b, transform.c,
+            transform.d, transform.e, transform.f
+        ],
+        "width": width,
+        "height": height,
+        "bounds": bounds,
+    }

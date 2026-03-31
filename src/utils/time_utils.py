@@ -14,3 +14,17 @@ def get_time_window(dt, hours=24):
     end = dt + delta
 
     return start.isoformat(), end.isoformat()
+
+def get_time_diff_hours(row):
+    """
+    Returns absolute time difference in hours between:
+    - floodmap_date
+    - sentinel_timestamp
+    """
+
+    flood_dt = parse_timestamp(row["floodmap_date"])
+    sentinel_dt = parse_timestamp(row["sentinel_timestamp"])
+
+    diff_hours = abs((sentinel_dt - flood_dt).total_seconds()) / 3600
+
+    return diff_hours

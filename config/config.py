@@ -6,6 +6,8 @@ class CFG:
     # base path
     ROOT: Path = Path("./")
 
+    DRIVE_ROOT: Path = Path("/content/drive/MyDrive")
+
     # download
     OLD_ZIP_URL: str = "https://zenodo.org/records/12748983/files/Dataset.zip?download=1"
 
@@ -15,6 +17,10 @@ class CFG:
 
     RESOLUTION: int = 10
 
+    GEE_PROJECT: str = "356457881639"
+
+    GEE_EXPORT_FOLDER: str = "STURM-fusion-exports"
+
 # dataset roots (set later)
     @property
     def STURM_FLOOD(self):
@@ -23,7 +29,7 @@ class CFG:
     @property
     def STURM_FUSION(self):
         return self.ROOT / f"STURM-fusion-{self.TIME_WINDOW_HOURS}"
-
+    
     # -----------------------
     # OLD (STURM original)
     # -----------------------
@@ -45,7 +51,7 @@ class CFG:
         return self.OLD_S2_PATH / "S2"
 
     @property
-    def OLD_S2_MASK_PATH(self):
+    def OLD_MASK_PATH(self):
         return self.OLD_S2_PATH / "Floodmaps"
 
     @property
@@ -87,3 +93,12 @@ class CFG:
     @property
     def NEW_S2_METADATA_CSV(self):
         return self.NEW_METADATA_PATH / "S2_metadata.csv"
+    
+    # mounted/local path where exported Drive files appear in Colab
+    @property
+    def EXPORT_PATH(self):
+        return self.DRIVE_ROOT / self.GEE_EXPORT_FOLDER
+    
+    @property
+    def NEW_METADATA_CSV(self):
+        return self.NEW_METADATA_PATH / "metadata.csv"
