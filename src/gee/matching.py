@@ -28,7 +28,7 @@ def get_best_s1_image(collection, target_dt):
     }
 
 
-def check_s1_covers_aoi(image, aoi):
+def check_s1_covers_aoi(image, aoi, verbose=False):
     """
     Returns True if the S1 image footprint fully covers the AOI.
     Also prints the intersection ratio.
@@ -40,8 +40,9 @@ def check_s1_covers_aoi(image, aoi):
 
     coverage_ratio = inter_area / aoi_area if aoi_area > 0 else 0
 
-    print(f"AOI area: {aoi_area:.2f}")
-    print(f"Intersection area: {inter_area:.2f}")
-    print(f"Coverage ratio: {coverage_ratio:.4f}")
+    if verbose:
+        print(f"AOI area: {aoi_area:.2f}")
+        print(f"Intersection area: {inter_area:.2f}")
+        print(f"Coverage ratio: {coverage_ratio:.4f}")
 
     return coverage_ratio >= 0.999

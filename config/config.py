@@ -21,6 +21,8 @@ class CFG:
 
     GEE_EXPORT_FOLDER: str = "STURM-fusion-exports"
 
+    HF_REPO_ID: str = "tax2310/STURM-fusion-" + str(TIME_WINDOW_HOURS)
+
 # dataset roots (set later)
     @property
     def STURM_FLOOD(self):

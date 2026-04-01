@@ -2,13 +2,15 @@ from email.mime import image
 import os
 import gdown
 import pandas as pd
+import rasterio
 
 from src.gee.export import export_s1_image, wait_for_all_tasks_to_complete, wait_for_batch_to_complete
 from src.geo.aoi import get_aoi_from_tif
 from src.gee.s1_collection import get_s1_collection
-from src.gee.matching import check_s1_valid_data_covers_aoi, get_best_s1_image, check_s1_covers_aoi, check_s1_valid_data_covers_aoi
+from src.gee.matching import get_best_s1_image, check_s1_covers_aoi
 from src.utils.time_utils import parse_timestamp, get_time_window, format_ee_timestamp, get_time_diff_hours
 from src.utils.io import copy_matching_files, save_dataframe_to_csv, tiff_exists, validate_dataset, zip_dataset
+from src.preprocess.operations import clip_bands, crop, lee_filter_per_band, normalise_per_band, remove_angle
 
 def process_csv(csv_path, cfg):
     df_s2 = pd.read_csv(csv_path)
@@ -79,9 +81,7 @@ def process_csv(csv_path, cfg):
     # optional: drop old columns if you do not want duplicates
     df_fusion = df_fusion.drop(columns=["epsg_code", "sentinel_timestamp"], errors="ignore")
 
-    save_dataframe_to_csv(df_fusion, cfg.NEW_METADATA_CSV)
-
-    return results
+    return results, df_fusion
 
 def export_all_s1_images(images, cfg):
 
@@ -124,6 +124,42 @@ def assemble_dataset(cfg):
     if validate_dataset(cfg):
         print("All files are present.📦")
     else:
-        print("Fix missing files before zipping 🚫")
+        print("Fix missing files. 🚫")
 
         #zip_dataset(cfg)
+
+def preprocessing_s1_pipeline(dir_path):
+    dir_path = dir_path
+
+    band_mins = [-30, -35]   # VV, VH
+    band_maxs = [5, 0]
+
+    for tif_path in dir_path.glob("*.tif"):
+        temp_path = tif_path.with_suffix(".tmp.tif")
+
+        with rasterio.open(tif_path) as src:
+            data = src.read()  # [C,H,W]
+            profile = src.profile.copy()
+
+        # Apply all operations
+        
+        data, profile = remove_angle(data, profile)
+
+        data, profile = crop(data, profile)
+
+        data = lee_filter_per_band(data)
+
+        data = clip_bands(data, band_mins, band_maxs)
+
+        data = normalise_per_band(data)
+
+        # Write temp file
+        with rasterio.open(temp_path, "w", **profile) as dst:
+            dst.write(data)
+
+        # Replace original
+        os.replace(temp_path, tif_path)
+
+        print(f"Processed: {tif_path.name}")
+
+    print("✅ Pipeline complete")
