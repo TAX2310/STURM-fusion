@@ -33,22 +33,6 @@ def create_dataset_structure(cfg):
     for path in paths:
         print(" -", path)
 
-def move_s1_to_dataset(cfg):
-    src = cfg.EXPORT_PATH                  # e.g. /content/drive/MyDrive/STURM_fusion_S1
-    dst = cfg.NEW_S1_PATH                  # e.g. Dataset/S1
-
-    dst.mkdir(parents=True, exist_ok=True)
-
-    for tif in Path(src).glob("*.tif"):
-        target = dst / tif.name
-
-        if target.exists():
-            continue
-
-        shutil.move(str(tif), str(target))
-
-    print("✅ Files moved to Dataset/S1")
-
 def copy_matching_files(csv_path, src_dir, dst_dir, tile_col="tile_id"):
     """
     Copy S2 tiles from OLD_S2_IMAGE_PATH to NEW_S2_PATH

@@ -27,6 +27,7 @@ def get_best_s1_image(collection, target_dt):
         "timestamp": timestamp,
     }
 
+
 def check_s1_covers_aoi(image, aoi):
     """
     Returns True if the S1 image footprint fully covers the AOI.

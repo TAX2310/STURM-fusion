@@ -1,3 +1,4 @@
+from email.mime import image
 import os
 import gdown
 import pandas as pd
@@ -5,7 +6,7 @@ import pandas as pd
 from src.gee.export import export_s1_image, wait_for_all_tasks_to_complete, wait_for_batch_to_complete
 from src.geo.aoi import get_aoi_from_tif
 from src.gee.s1_collection import get_s1_collection
-from src.gee.matching import get_best_s1_image, check_s1_covers_aoi
+from src.gee.matching import check_s1_valid_data_covers_aoi, get_best_s1_image, check_s1_covers_aoi, check_s1_valid_data_covers_aoi
 from src.utils.time_utils import parse_timestamp, get_time_window, format_ee_timestamp, get_time_diff_hours
 from src.utils.io import copy_matching_files, save_dataframe_to_csv, tiff_exists, validate_dataset, zip_dataset
 
@@ -113,7 +114,7 @@ def export_all_s1_images_batch(images, cfg, batch_size=2):
 
     wait_for_all_tasks_to_complete()
 
-def create_dataset(cfg):
+def assemble_dataset(cfg):
     print("Copying Matched S2 images... 🚀")
     copy_matching_files(cfg.NEW_METADATA_CSV, cfg.OLD_S2_IMAGE_PATH, cfg.NEW_S2_PATH)
     print("Copying Matched S1 images... 🚀")
@@ -121,8 +122,8 @@ def create_dataset(cfg):
     print("Copying Matched Mask images... 🚀")
     copy_matching_files(cfg.NEW_METADATA_CSV, cfg.OLD_MASK_PATH, cfg.NEW_MASK_PATH)
     if validate_dataset(cfg):
-        #zip_dataset(cfg)
-        pass
+        print("All files are present.📦")
     else:
         print("Fix missing files before zipping 🚫")
 
+        #zip_dataset(cfg)
