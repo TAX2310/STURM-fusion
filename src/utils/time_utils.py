@@ -19,11 +19,16 @@ def get_time_diff_hours(row):
     """
     Returns absolute time difference in hours between:
     - floodmap_date
-    - sentinel_timestamp
+    - sentinel2_timestamp (if exists) else sentinel_timestamp
     """
 
     flood_dt = parse_timestamp(row["floodmap_date"])
-    sentinel_dt = parse_timestamp(row["sentinel_timestamp"])
+
+    # Prefer sentinel2_timestamp if available
+    if "sentinel2_timestamp" in row and pd.notna(row["sentinel2_timestamp"]):
+        sentinel_dt = parse_timestamp(row["sentinel2_timestamp"])
+    else:
+        sentinel_dt = parse_timestamp(row["sentinel_timestamp"])
 
     diff_hours = abs((sentinel_dt - flood_dt).total_seconds()) / 3600
 

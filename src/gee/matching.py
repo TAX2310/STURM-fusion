@@ -46,3 +46,35 @@ def check_s1_covers_aoi(image, aoi, verbose=False):
         print(f"Coverage ratio: {coverage_ratio:.4f}")
 
     return coverage_ratio >= 0.999
+
+def is_s1_coverage_valid(image, aoi, scale=10, threshold=0.1):
+    """
+    Returns True if BOTH bands have less than threshold masked pixels.
+
+    threshold = 0.05 → allows up to 5% masked pixels
+    """
+
+    # Get mask (1 = valid, 0 = masked)
+    mask = image.mask()
+
+    # Compute mean mask value per band
+    # mean = proportion of valid pixels
+    coverage = mask.reduceRegion(
+        reducer=ee.Reducer.mean(),
+        geometry=aoi,
+        scale=scale,
+        maxPixels=1e9
+    ).getInfo()
+
+    # Check each band
+    for band, value in coverage.items():
+        if value is None:
+            return False  # completely missing
+
+        valid_ratio = value
+        masked_ratio = 1 - valid_ratio
+
+        if masked_ratio > threshold:
+            return False
+
+    return True

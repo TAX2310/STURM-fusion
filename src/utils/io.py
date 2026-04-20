@@ -113,44 +113,6 @@ def tiff_exists(file, cfg):
 
     return export_file.exists() or s1_file.exists()
 
-def validate_dataset(cfg):
-    """
-    Returns:
-        True  -> if ANY files are missing
-        False -> if dataset is complete
-    """
-
-    df = pd.read_csv(cfg.NEW_METADATA_CSV)
-
-    s2_dir = Path(cfg.NEW_S2_PATH)
-    s1_dir = Path(cfg.NEW_S1_PATH)
-
-    missing_s2 = []
-    missing_s1 = []
-
-    for tile_id in df["tile_id"].astype(str):
-        filename = Path(tile_id).stem + ".tif"
-
-        if not (s2_dir / filename).exists():
-            missing_s2.append(filename)
-
-        if not (s1_dir / filename).exists():
-            missing_s1.append(filename)
-
-    total_missing = len(missing_s2) + len(missing_s1)
-
-    print("\n📊 Validation Results:")
-    print(f"Total rows: {len(df)}")
-    print(f"Missing S2: {len(missing_s2)}")
-    print(f"Missing S1: {len(missing_s1)}")
-
-    if total_missing > 0:
-        print("❌ Dataset incomplete")
-        return False   # <-- missing exists
-    else:
-        print("✅ Dataset complete")
-        return True  # <-- all good
-
 def zip_dataset(cfg):
     """
     Zips the existing Dataset folder directly into ROOT.
@@ -183,3 +145,7 @@ def zip_dataset(cfg):
     print(f"✅ Dataset zipped at: {zip_path}")
 
     return zip_path
+
+def count_metadata_samples(csv_file):
+    df = pd.read_csv(csv_file)
+    return len(df)
