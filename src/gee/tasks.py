@@ -54,7 +54,7 @@ def wait_for_task(task, sleep=10, verbose=True):
         state = status["state"]
 
         if verbose:
-            print(f"Task state: {state}")
+            print(f"Task state: {state}", end="", flush=True)
 
         if state in ["COMPLETED", "FAILED", "CANCELLED"]:
             return status

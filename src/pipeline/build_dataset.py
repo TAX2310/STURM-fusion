@@ -202,6 +202,7 @@ def preprocessing_steps(tif_path):
             pipeline="s1_preprocessing",
             steps=",".join(sorted(steps_done))
         )
+        print(dst.tags())
     
     print(f"Processed: {tif_path.name} | Steps: {steps_done}")
 
