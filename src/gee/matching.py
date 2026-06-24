@@ -28,10 +28,10 @@ def get_best_s1_image(collection, target_dt):
     }
 
 
-def check_s1_covers_aoi(image, aoi, verbose=False):
+def check_s1_covers_aoi(image, aoi, threshold=0.999, verbose=False):
     """
-    Returns True if the S1 image footprint fully covers the AOI.
-    Also prints the intersection ratio.
+    Returns True if the S1 image footprint covers at least `threshold`
+    fraction of the AOI. Also prints the intersection ratio.
     """
     footprint = ee.Geometry(image.geometry())
     intersection = footprint.intersection(aoi, ee.ErrorMargin(1))
@@ -45,7 +45,7 @@ def check_s1_covers_aoi(image, aoi, verbose=False):
         print(f"Intersection area: {inter_area:.2f}")
         print(f"Coverage ratio: {coverage_ratio:.4f}")
 
-    return coverage_ratio >= 0.999
+    return coverage_ratio >= threshold
 
 def is_s1_coverage_valid(image, aoi, scale=10, threshold=0.1):
     """

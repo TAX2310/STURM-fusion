@@ -46,35 +46,6 @@ def export_s1_image(item, cfg):
     task.start()
     return task
 
-def export_s1_image_old(item, cfg):
-    """
-    Export a single S1 image using info from your results list
-    """
-
-    image = item["image"]
-    aoi = item["aoi"]
-    tile_id = item["tile_id"]
-    crs= item["crs"]
-
-    # Clip + select bands (important)
-    image = image.select(["VV", "VH"]).clip(aoi)
-
-    task = ee.batch.Export.image.toDrive(
-        image=image,
-        description=tile_id,
-        folder=cfg.GEE_EXPORT_FOLDER,   
-        fileNamePrefix=tile_id.replace(".tif", ""),
-        region=aoi,
-        scale=cfg.RESOLUTION,
-        crs=crs,
-        fileFormat="GeoTIFF",
-        maxPixels=1e9
-    )
-
-    task.start()
-
-    return task
-
 def wait_for_batch_to_complete(max_tasks=2, poll_interval=30):
     while True:
         tasks = ee.batch.Task.list()

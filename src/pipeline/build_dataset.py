@@ -1,13 +1,13 @@
-from email.mime import image
 import os
 import gdown
 import pandas as pd
 import rasterio
+import numpy as np
 
 from src.gee.export import export_s1_image, wait_for_all_tasks_to_complete, wait_for_batch_to_complete
 from src.geo.aoi import get_aoi_from_tif
 from src.gee.s1_collection import get_s1_collection
-from src.gee.matching import get_best_s1_image, check_s1_covers_aoi, is_s1_coverage_valid
+from src.gee.matching import get_best_s1_image, check_s1_covers_aoi
 from src.utils.time_utils import parse_timestamp, get_time_window, format_ee_timestamp, get_time_diff_hours
 from src.utils.io import copy_matching_files, save_dataframe_to_csv, tiff_exists, zip_dataset
 from src.preprocess.operations import clip_bands, crop, lee_filter_per_band, normalise_per_band, remove_angle
@@ -19,9 +19,9 @@ def process_sample(row, cfg, verbose=False):
         tif_path = os.path.join(cfg.OLD_S2_IMAGE_PATH, tile_id)
 
         diff = get_time_diff_hours(row)
-        if diff > 72:
+        if diff > cfg.S1_TIME_THRESHOLD_HOURS:
             if verbose:
-                print(f"Skipping {tile_id} - time diff > 72h")
+                print(f"Skipping {tile_id} - time diff > {cfg.S1_TIME_THRESHOLD_HOURS}h")
             return None, None
 
         aoi = get_aoi_from_tif(tif_path)
@@ -41,16 +41,11 @@ def process_sample(row, cfg, verbose=False):
                 print(f"Skipping {tile_id} - no best S1 image")
             return None, None
 
-        if not check_s1_covers_aoi(result["image"], aoi):
+        if not check_s1_covers_aoi(result["image"], aoi, threshold=cfg.S1_COVERAGE_THRESHOLD):
             if verbose:
                 print(f"Skipping {tile_id} - S1 does not fully cover AOI")
             return None, None
-        
-        #if not is_s1_coverage_valid(result["image"], aoi):
-        #    if verbose:
-        #        print(f"Skipping {tile_id} - S1 coverage not valid (too many masked pixels)")
-        #    return None, None
-    
+
         return result, aoi
     except Exception as e:
         if verbose:
@@ -141,11 +136,40 @@ def assemble_dataset(cfg):
     print("Copying Matched Mask images... 🚀")
     copy_matching_files(cfg.NEW_METADATA_CSV, cfg.OLD_MASK_PATH, cfg.NEW_MASK_PATH)
 
-def preprocessing_steps(tif_path):
+def _step_remove_angle(data, profile, cfg):
+    return remove_angle(data, profile)
 
-    band_mins = [-30, -35]   # VV, VH
-    band_maxs = [5, 0]
+def _step_crop(data, profile, cfg):
+    return crop(data, profile, size=cfg.S1_CROP_SIZE)
 
+def _step_lee_filter(data, profile, cfg):
+    return lee_filter_per_band(data, size=cfg.LEE_FILTER_SIZE), profile
+
+def _step_clip_bands(data, profile, cfg):
+    return clip_bands(data, cfg.S1_BAND_MINS, cfg.S1_BAND_MAXS), profile
+
+def _step_normalise(data, profile, cfg):
+    return normalise_per_band(data), profile
+
+def _step_remove_nana(data, profile, cfg):
+    return np.nan_to_num(data, nan=0.0), profile
+
+# Ordered (tag_name, step_fn) pairs. tag_name is persisted into the GeoTIFF
+# "steps" tag so reruns can resume from the last completed step.
+S1_PREPROCESSING_STEPS = [
+    ("remove_angle", _step_remove_angle),
+    ("crop", _step_crop),
+    ("lee_filter", _step_lee_filter),
+    ("clip_bands", _step_clip_bands),
+    ("normalise", _step_normalise),
+    ("remove_nana", _step_remove_nana),
+]
+
+S2_PREPROCESSING_STEPS = [
+    ("remove_nana", _step_remove_nana),
+]
+
+def _run_preprocessing_steps(tif_path, cfg, steps, pipeline_name):
     temp_path = tif_path.with_suffix(".tmp.tif")
 
     with rasterio.open(tif_path) as src:
@@ -159,35 +183,11 @@ def preprocessing_steps(tif_path):
 
     updated = False  # track if anything changes
 
-    # ---- Step 1: remove_angle ----
-    if "remove_angle" not in steps_done:
-        data, profile = remove_angle(data, profile)
-        steps_done.add("remove_angle")
-        updated = True
-
-    # ---- Step 2: crop ----
-    if "crop" not in steps_done:
-        data, profile = crop(data, profile)
-        steps_done.add("crop")
-        updated = True
-
-    # ---- Step 3: lee filter ----
-    if "lee_filter" not in steps_done:
-        data = lee_filter_per_band(data)
-        steps_done.add("lee_filter")
-        updated = True
-
-    # ---- Step 4: clip ----
-    if "clip_bands" not in steps_done:
-        data = clip_bands(data, band_mins, band_maxs)
-        steps_done.add("clip_bands")
-        updated = True
-
-    # ---- Step 5: normalise ----
-    if "normalise" not in steps_done:
-        data = normalise_per_band(data)
-        steps_done.add("normalise")
-        updated = True
+    for tag_name, step_fn in steps:
+        if tag_name not in steps_done:
+            data, profile = step_fn(data, profile, cfg)
+            steps_done.add(tag_name)
+            updated = True
 
     # If nothing changed, skip write
     if not updated:
@@ -199,21 +199,41 @@ def preprocessing_steps(tif_path):
         dst.write(data)
         dst.update_tags(
             preprocessed="true",
-            pipeline="s1_preprocessing",
+            pipeline=pipeline_name,
             steps=",".join(sorted(steps_done))
         )
         print(dst.tags())
-    
+
     print(f"Processed: {tif_path.name} | Steps: {steps_done}")
 
     return temp_path
+
+def preprocessing_s1_steps(tif_path, cfg):
+    return _run_preprocessing_steps(tif_path, cfg, S1_PREPROCESSING_STEPS, "s1_preprocessing")
+
+def preprocessing_s2_steps(tif_path, cfg):
+    return _run_preprocessing_steps(tif_path, cfg, S2_PREPROCESSING_STEPS, "s2_preprocessing")
 
 def preprocessing_s1_pipeline(cfg):
     dir_path = cfg.NEW_S1_PATH
 
     for tif_path in dir_path.glob("*.tif"):
 
-        temp_path = preprocessing_steps(tif_path)
+        temp_path = preprocessing_s1_steps(tif_path, cfg)
+
+        if temp_path is None:
+            continue
+
+        os.replace(temp_path, tif_path)
+
+    print("✅ Pipeline complete")
+
+def preprocessing_s2_pipeline(cfg):
+    dir_path = cfg.NEW_S2_PATH
+
+    for tif_path in dir_path.glob("*.tif"):
+
+        temp_path = preprocessing_s2_steps(tif_path, cfg)
 
         if temp_path is None:
             continue

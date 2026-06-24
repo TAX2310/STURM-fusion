@@ -2,16 +2,17 @@ from pathlib import Path
 from src.gee.export import export_s1_image
 from src.gee.tasks import wait_for_task
 import numpy as np
-from src.pipeline.build_dataset import export_all_s1_images, preprocessing_s1_pipeline, preprocessing_steps, process_sample
+from src.pipeline.build_dataset import preprocessing_s1_pipeline, preprocessing_s1_steps, process_sample
 import rasterio
 import pandas as pd
 import os
 import time
 
-def nan_ratio(file_path):
+def nan_or_zero_ratio(file_path):
     with rasterio.open(file_path) as src:
         total_pixels = 0
         nan_pixels = 0
+        zero_pixels = 0
 
         for b in range(1, src.count + 1):
             band = src.read(b)
@@ -20,10 +21,11 @@ def nan_ratio(file_path):
 
             if np.issubdtype(band.dtype, np.floating):
                 nan_pixels += np.isnan(band).sum()
+            zero_pixels += np.sum(band == 0)
 
-        nan_ratio = nan_pixels / total_pixels
+        ratio = (nan_pixels + zero_pixels) / total_pixels
 
-    return nan_ratio
+    return ratio
 
 def count_nan_files(input_dir, threshold=0.05, return_files=False):
     """
@@ -49,7 +51,7 @@ def count_nan_files(input_dir, threshold=0.05, return_files=False):
     bad_files = []
 
     for file_path in input_dir.glob("*.tif"):
-        ratio = nan_ratio(file_path)
+        ratio = nan_or_zero_ratio(file_path)
 
         if ratio > threshold:
             bad_count += 1
@@ -66,7 +68,7 @@ import shutil
 import pandas as pd
 
 
-def retry_export_of_nan_files(cfg, threshold=0.05, save_csv=True):
+def retry_export_of_nan_files(cfg, threshold=None, save_csv=True):
     """
     Retry export for files in NEW_S1_PATH with NaN ratio above threshold.
 
@@ -92,6 +94,9 @@ def retry_export_of_nan_files(cfg, threshold=0.05, save_csv=True):
     pd.DataFrame
         Updated new_df
     """
+
+    if threshold is None:
+        threshold = cfg.NAN_RATIO_THRESHOLD
 
     new_df = pd.read_csv(cfg.NEW_METADATA_CSV)
     old_df = pd.read_csv(cfg.OLD_S2_METADATA_CSV)
@@ -150,11 +155,15 @@ def retry_export_of_nan_files(cfg, threshold=0.05, save_csv=True):
             time.sleep(10)
             print("Waiting for export...")
 
-        temp_path = preprocessing_steps(export_file_path)
+        temp_path = preprocessing_s1_steps(export_file_path, cfg)
 
-        ratio = nan_ratio(temp_path)
-
-        os.unlink(temp_path)
+        if temp_path is None:
+            # Already fully preprocessed (e.g. a previous run wrote the
+            # tags but crashed before this check); validate it directly.
+            ratio = nan_or_zero_ratio(export_file_path)
+        else:
+            ratio = nan_or_zero_ratio(temp_path)
+            os.unlink(temp_path)
 
         if ratio > threshold:
             print(f"⚠️ Still bad (NaN ratio: {ratio:.2%}): {tile_id}")
@@ -412,7 +421,7 @@ def validate_preprocessing(cfg):
     return True
 
 def validate_nan_files(cfg):
-    bad_count, bad_files = count_nan_files(cfg.NEW_S1_PATH, threshold=0.05, return_files=True)
+    bad_count, bad_files = count_nan_files(cfg.NEW_S1_PATH, threshold=cfg.NAN_RATIO_THRESHOLD, return_files=True)
     print(f"Number of bad files: {bad_count}")
     if bad_count > 0:
         print("❌ Some files have high NaN ratio:")

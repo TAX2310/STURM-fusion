@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 @dataclass
@@ -22,6 +22,29 @@ class CFG:
     GEE_EXPORT_FOLDER: str = "STURM-fusion-exports"
 
     HF_REPO_ID: str = "tax2310/STURM-fusion-" + str(TIME_WINDOW_HOURS)
+
+    # -----------------------
+    # matching / preprocessing parameters
+    # -----------------------
+
+    # max allowed gap between S2 and S1 acquisition, in hours
+    S1_TIME_THRESHOLD_HOURS: int = 72
+
+    # min fraction of the AOI the S1 footprint must cover
+    S1_COVERAGE_THRESHOLD: float = 0.999
+
+    # S1 crop size in pixels (square)
+    S1_CROP_SIZE: int = 128
+
+    # Lee speckle filter window size in pixels
+    LEE_FILTER_SIZE: int = 5
+
+    # per-band clip range for S1 (VV, VH), in dB
+    S1_BAND_MINS: list = field(default_factory=lambda: [-30, -35])
+    S1_BAND_MAXS: list = field(default_factory=lambda: [5, 0])
+
+    # max allowed fraction of NaN/zero pixels in a file before it's flagged bad
+    NAN_RATIO_THRESHOLD: float = 0.05
 
 # dataset roots (set later)
     @property
