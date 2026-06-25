@@ -1,6 +1,6 @@
 import ee
 import time 
-from src.geo.aoi import get_tif_export_grid
+from src.gee.aoi import get_tif_export_grid
 
 def assert_same_dtype(image):
     band_types = image.bandTypes().getInfo()
@@ -67,7 +67,7 @@ def wait_for_batch_to_complete(max_tasks=2, poll_interval=30):
         if len(active) < max_tasks:
             break
 
-        print(f"⏳ {len(active)} active tasks — waiting...")
+        print(f"{len(active)} active tasks, waiting...")
         time.sleep(poll_interval)
 
 def wait_for_all_tasks_to_complete(poll_interval=30):
@@ -76,8 +76,8 @@ def wait_for_all_tasks_to_complete(poll_interval=30):
         active = [t for t in tasks if t.status()["state"] in ["READY", "RUNNING"]]
 
         if not active:
-            print("✅ All GEE tasks finished")
+            print("All GEE tasks finished")
             break
 
-        print(f"⏳ Waiting for all tasks... {len(active)} still active")
+        print(f"Waiting for all tasks... {len(active)} still active")
         time.sleep(poll_interval)

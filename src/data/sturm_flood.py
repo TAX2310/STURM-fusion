@@ -10,7 +10,7 @@ def download_and_extract(cfg):
 
     # Download
     if not zip_path.exists() and not data_path.exists():
-        print("⬇️ Downloading dataset...")
+        print("Downloading dataset...")
         zip_path.parent.mkdir(parents=True, exist_ok=True)
         os.system(f"wget -O '{zip_path}' '{cfg.OLD_ZIP_URL}'")
 
@@ -20,11 +20,11 @@ def download_and_extract(cfg):
                 f"Check cfg.OLD_ZIP_URL and network access."
             )
     else:
-        print("✅ Zip already exists or dataset present, skipping download.")
+        print("Zip already exists or dataset present, skipping download.")
 
     # Extract
     if data_path.exists():
-        print("✅ Dataset already extracted, skipping unzip.")
+        print("Dataset already extracted, skipping unzip.")
     else:
         if not zip_path.exists():
             raise FileNotFoundError(
@@ -32,7 +32,7 @@ def download_and_extract(cfg):
                 f"must have failed; re-run download_and_extract() to retry."
             )
 
-        print("📦 Extracting Sentinel2 + metadata...")
+        print("Extracting Sentinel2 + metadata...")
 
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             for member in zip_ref.namelist():
@@ -43,9 +43,9 @@ def download_and_extract(cfg):
                 ):
                     zip_ref.extract(member, cfg.STURM_FLOOD)
 
-        print("✅ Extraction complete.")
+        print("Extraction complete.")
 
     # Delete zip
     if zip_path.exists():
         zip_path.unlink()
-        print("🗑️ Zip file deleted.")
+        print("Zip file deleted.")

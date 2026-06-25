@@ -10,7 +10,7 @@ def save_dataframe_to_csv(df, output_path):
     # save (overwrite by default)
     df.to_csv(output_path, index=False)
     
-    print(f"✅ CSV saved to: {output_path}")
+    print(f"CSV saved to: {output_path}")
 
 def create_dataset_structure(cfg):
     paths = [
@@ -29,9 +29,9 @@ def create_dataset_structure(cfg):
     for path in paths:
         os.makedirs(path, exist_ok=True)
 
-    print("✅ Dataset structure created:")
+    print("Dataset structure created:")
     for path in paths:
-        print(" -", path)
+        print(f" - {path}")
 
 def copy_matching_files(csv_path, src_dir, dst_dir, tile_col="tile_id"):
     """
@@ -67,24 +67,24 @@ def copy_matching_files(csv_path, src_dir, dst_dir, tile_col="tile_id"):
         copied += 1
 
     print()
-    print(f"✅ Copied: {copied}")
-    print(f"⏭️ Skipped existing: {skipped}")
-    print(f"⚠️ Missing source: {missing}")
+    print(f"Copied: {copied}")
+    print(f"Skipped existing: {skipped}")
+    print(f"Missing source: {missing}")
 
 def clear_export_folder(cfg):
     export_path = Path(cfg.EXPORT_PATH)
 
     if not export_path.exists():
-        print("⚠️ Export folder does not exist")
+        print("Export folder does not exist")
         return
 
     files = list(export_path.glob("*"))
 
     if not files:
-        print("✅ Export folder already empty")
+        print("Export folder already empty")
         return
 
-    print(f"🗑️ Deleting {len(files)} files...")
+    print(f"Deleting {len(files)} files...")
 
     for f in files:
         try:
@@ -97,9 +97,9 @@ def clear_export_folder(cfg):
             print(f"Deleted: {f.name}")
 
         except Exception as e:
-            print(f"❌ Failed to delete {f.name}: {e}")
+            print(f"Failed to delete {f.name}: {e}")
 
-    print("✅ Export folder cleared")
+    print("Export folder cleared")
 
 def tiff_exists(file, cfg):
 
@@ -133,7 +133,7 @@ def zip_dataset(cfg):
     if not dataset_dir.exists():
         raise FileNotFoundError(f"Dataset folder not found: {dataset_dir}")
 
-    print("🗜️ Zipping dataset directly...")
+    print("Zipping dataset directly...")
 
     shutil.make_archive(
         str(zip_path).replace(".zip", ""),  # base name
@@ -142,7 +142,7 @@ def zip_dataset(cfg):
         base_dir="Dataset"                  # include Dataset folder
     )
 
-    print(f"✅ Dataset zipped at: {zip_path}")
+    print(f"Dataset zipped at: {zip_path}")
 
     return zip_path
 

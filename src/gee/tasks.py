@@ -10,8 +10,8 @@ def has_active_tasks(verbose=False):
 
     if verbose:
         running_count = sum(t.status()['state'] == 'RUNNING' for t in tasks)
-        print("\n📊 GEE Task Status:")
-        print(f"RUNNING   : {running_count}")
+        print("\nGEE task status:")
+        print(f"RUNNING: {running_count}")
         return running_count > 0
     else:
         return any(t.status()['state'] in ['RUNNING', 'READY'] for t in tasks)
@@ -35,13 +35,13 @@ def cancel_all_tasks(verbose=True):
             t.cancel()
             cancelled += 1
             if verbose:
-                print(f"❌ Cancelled: {desc} ({state})")
+                print(f"Cancelled: {desc} ({state})")
         else:
             skipped += 1
             if verbose:
-                print(f"⏭️ Skipped: {desc} ({state})")
+                print(f"Skipped: {desc} ({state})")
 
-    print("\n📊 Summary:")
+    print("\nSummary:")
     print(f"Cancelled: {cancelled}")
     print(f"Skipped (already done): {skipped}")
 
