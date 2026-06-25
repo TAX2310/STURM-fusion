@@ -3,6 +3,9 @@ from rasterio.warp import transform_bounds
 import ee
 
 def get_aoi_from_tif(tif_path):
+    """
+    Returns the AOI (Area of Interest) as an ee.Geometry.Rectangle object
+    """
     with rasterio.open(tif_path) as src:
         left, bottom, right, top = src.bounds
         src_crs = src.crs

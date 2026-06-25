@@ -8,12 +8,14 @@ class CFG:
 
     DRIVE_ROOT: Path = Path("/content/drive/MyDrive")
 
+        # max allowed gap between S2 and S1 acquisition, in hours
+    S2_TIME_THRESHOLD_HOURS: int = 72
+    S1_TIME_THRESHOLD_HOURS: int = 24
+
     # download
     OLD_ZIP_URL: str = "https://zenodo.org/records/12748983/files/Dataset.zip?download=1"
 
     NEW_ZIP_URL: str = ""
-
-    TIME_WINDOW_HOURS: int = 24
 
     RESOLUTION: int = 10
 
@@ -21,14 +23,11 @@ class CFG:
 
     GEE_EXPORT_FOLDER: str = "STURM-fusion-exports"
 
-    HF_REPO_ID: str = "tax2310/STURM-fusion-" + str(TIME_WINDOW_HOURS)
+    HF_REPO_ID: str = "tax2310/STURM-fusion-" + str(S1_TIME_THRESHOLD_HOURS)
 
     # -----------------------
     # matching / preprocessing parameters
     # -----------------------
-
-    # max allowed gap between S2 and S1 acquisition, in hours
-    S1_TIME_THRESHOLD_HOURS: int = 72
 
     # min fraction of the AOI the S1 footprint must cover
     S1_COVERAGE_THRESHOLD: float = 0.999
@@ -53,7 +52,7 @@ class CFG:
     
     @property
     def STURM_FUSION(self):
-        return self.ROOT / f"STURM-fusion-{self.TIME_WINDOW_HOURS}"
+        return self.ROOT / f"STURM-fusion-{self.S1_TIME_THRESHOLD_HOURS}h"
     
     # -----------------------
     # OLD (STURM original)

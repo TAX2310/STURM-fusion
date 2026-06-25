@@ -1,8 +1,12 @@
 import ee
 
 def add_time_diff(collection, target_dt):
+    """
+    Adds a property 'time_diff' to each image in the collection, representing the absolute time difference in seconds between the image's timestamp and the target_dt.
+    """
     target = ee.Date(target_dt.isoformat())
 
+    # Define a function to compute the time difference for each image
     def _add(img):
         img_time = ee.Date(img.get('system:time_start'))
         diff = img_time.difference(target, 'second').abs()
@@ -10,8 +14,11 @@ def add_time_diff(collection, target_dt):
 
     return collection.map(_add)
 
-
 def get_best_s1_image(collection, target_dt):
+    """
+    Returns the S1 image from the collection that is closest in time to the target_dt.
+    """
+    # Add time difference property to each image in the collection
     collection = add_time_diff(collection, target_dt)
     image = collection.sort('time_diff').first()
 
@@ -21,23 +28,24 @@ def get_best_s1_image(collection, target_dt):
 
     timestamp = image.get('system:time_start').getInfo()
 
+    # Return a dictionary with the image and its metadata
     return {
         "image_id": image_id,
         "image": image,
         "timestamp": timestamp,
     }
 
-
 def check_s1_covers_aoi(image, aoi, threshold=0.999, verbose=False):
     """
-    Returns True if the S1 image footprint covers at least `threshold`
-    fraction of the AOI. Also prints the intersection ratio.
+    Returns True if the S1 image footprint covers at least `threshold` fraction of the AOI. 
     """
+    # Get the footprint of the S1 image
     footprint = ee.Geometry(image.geometry())
     intersection = footprint.intersection(aoi, ee.ErrorMargin(1))
     inter_area = intersection.area(1).getInfo()
     aoi_area = aoi.area(1).getInfo()
 
+    # Calculate the coverage ratio
     coverage_ratio = inter_area / aoi_area if aoi_area > 0 else 0
 
     if verbose:

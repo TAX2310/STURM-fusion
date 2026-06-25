@@ -11,7 +11,14 @@ def download_and_extract(cfg):
     # Download
     if not zip_path.exists() and not data_path.exists():
         print("⬇️ Downloading dataset...")
+        zip_path.parent.mkdir(parents=True, exist_ok=True)
         os.system(f"wget -O '{zip_path}' '{cfg.OLD_ZIP_URL}'")
+
+        if not zip_path.exists() or zip_path.stat().st_size == 0:
+            raise RuntimeError(
+                f"Download failed: {zip_path} was not created. "
+                f"Check cfg.OLD_ZIP_URL and network access."
+            )
     else:
         print("✅ Zip already exists or dataset present, skipping download.")
 
@@ -19,6 +26,12 @@ def download_and_extract(cfg):
     if data_path.exists():
         print("✅ Dataset already extracted, skipping unzip.")
     else:
+        if not zip_path.exists():
+            raise FileNotFoundError(
+                f"Cannot extract - zip not found at {zip_path}. The download step "
+                f"must have failed; re-run download_and_extract() to retry."
+            )
+
         print("📦 Extracting Sentinel2 + metadata...")
 
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:

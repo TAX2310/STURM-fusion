@@ -3,12 +3,20 @@ from datetime import timedelta
 from datetime import datetime, timezone
 
 def parse_timestamp(ts_str):
+    """
+    Parses a timestamp string into a pandas.Timestamp object. Supports multiple formats."""
     return pd.to_datetime(ts_str, format="mixed")
 
 def format_ee_timestamp(ms):
+    """
+    Formats a timestamp in milliseconds since epoch into a human-readable string.
+    """
     return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).strftime("%d/%m/%Y %H:%M")
 
 def get_time_window(dt, hours=24):
+    """
+    Returns a time window around a given datetime `dt` in ISO format.
+    """
     delta = timedelta(hours=hours)
     start = dt - delta
     end = dt + delta

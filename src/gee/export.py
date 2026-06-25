@@ -12,14 +12,21 @@ def assert_same_dtype(image):
         raise ValueError(f"Inconsistent band types: {set(precisions)}")
 
 def export_s1_image(item, cfg):
+    """
+    Exports a Sentinel-1 image to Google Drive using the specified configuration.
+    """
     tile_id = item["tile_id"]
     image = item["image"]
     image = image.toFloat()
+
+    # Ensure all bands have the same data type
     assert_same_dtype(image)
 
+    # Get the export grid from the corresponding Sentinel-2 image
     tif_path = cfg.OLD_S2_IMAGE_PATH / tile_id
     grid = get_tif_export_grid(tif_path)
 
+    # Define the export region based on the grid's bounds
     region = ee.Geometry.Rectangle(
         [
             grid["bounds"].left,
@@ -31,6 +38,7 @@ def export_s1_image(item, cfg):
         geodesic=False,
     )
 
+    # Start the export task to Google Drive
     task = ee.batch.Export.image.toDrive(
         image=image,
         description=tile_id,
@@ -43,6 +51,7 @@ def export_s1_image(item, cfg):
         fileFormat="GeoTIFF",
     )
 
+    # Start the task
     task.start()
     return task
 

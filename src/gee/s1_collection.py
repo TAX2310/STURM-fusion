@@ -1,6 +1,9 @@
 import ee
 
 def get_s1_collection(aoi, start_str, end_str):
+    """
+    Returns a filtered Sentinel-1 ImageCollection for the given AOI and time window.
+    """
     return (
         ee.ImageCollection("COPERNICUS/S1_GRD")
         .filterBounds(aoi)
