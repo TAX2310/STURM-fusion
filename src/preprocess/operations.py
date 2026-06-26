@@ -1,36 +1,34 @@
-from pathlib import Path
-import rasterio
-import os
-import numpy as np 
+import numpy as np
 from scipy.ndimage import uniform_filter
 
-def remove_angle(data, profile):
+def remove_angle(data, profile, cfg):
     if data.shape[0] == 3:
         data = data[:2]  # VV, VH
         profile.update(count=2)
     return data, profile
 
-def crop(data, profile, size=128):
+def crop(data, profile, cfg):
+    size = cfg.S1_CROP_SIZE
     _, H, W = data.shape
     if H > size or W > size:
         data = data[:, :size, :size]
         profile.update(height=size, width=size)
     return data, profile
 
-def clip_bands(data, mins, maxs):
-    mins = np.array(mins)[:, None, None]
-    maxs = np.array(maxs)[:, None, None]
+def clip_bands(data, profile, cfg):
+    mins = np.array(cfg.S1_BAND_MINS)[:, None, None]
+    maxs = np.array(cfg.S1_BAND_MAXS)[:, None, None]
 
-    return np.clip(data, mins, maxs)
+    return np.clip(data, mins, maxs), profile
 
-def normalise_per_band(data, eps=1e-6):
+def normalise_per_band(data, profile, cfg, eps=1e-6):
     means = np.nanmean(data, axis=(1, 2), keepdims=True)
     stds  = np.nanstd(data, axis=(1, 2), keepdims=True)
 
-    return (data - means) / (stds + eps)
+    return (data - means) / (stds + eps), profile
 
-import numpy as np
-from scipy.ndimage import uniform_filter
+def remove_nana(data, profile, cfg):
+    return np.nan_to_num(data, nan=0.0), profile
 
 
 def lee_filter_band(band, size=5, eps=1e-8):
@@ -93,15 +91,16 @@ def lee_filter_band(band, size=5, eps=1e-8):
     return filtered.astype(np.float32)
 
 
-def lee_filter_per_band(data, size=5):
+def lee_filter_per_band(data, profile, cfg):
     """
     Apply NaN-safe Lee filter separately to each band.
 
     data: np.ndarray [C, H, W]
     """
+    size = cfg.LEE_FILTER_SIZE
     out = np.empty_like(data, dtype=np.float32)
 
     for b in range(data.shape[0]):
         out[b] = lee_filter_band(data[b], size=size)
 
-    return out
+    return out, profile

@@ -3,6 +3,9 @@ import time
 from src.gee.aoi import get_tif_export_grid
 
 def assert_same_dtype(image):
+    """
+    Asserts that all bands in the given image have the same data type.
+    """
     band_types = image.bandTypes().getInfo()
 
     # Extract precision types (float, double, etc.)
@@ -54,30 +57,3 @@ def export_s1_image(item, cfg):
     # Start the task
     task.start()
     return task
-
-def wait_for_batch_to_complete(max_tasks=2, poll_interval=30):
-    while True:
-        tasks = ee.batch.Task.list()
-
-        active = [
-            t for t in tasks
-            if t.status()["state"] in ["RUNNING", "READY"]
-        ]
-
-        if len(active) < max_tasks:
-            break
-
-        print(f"{len(active)} active tasks, waiting...")
-        time.sleep(poll_interval)
-
-def wait_for_all_tasks_to_complete(poll_interval=30):
-    while True:
-        tasks = ee.batch.Task.list()
-        active = [t for t in tasks if t.status()["state"] in ["READY", "RUNNING"]]
-
-        if not active:
-            print("All GEE tasks finished")
-            break
-
-        print(f"Waiting for all tasks... {len(active)} still active")
-        time.sleep(poll_interval)

@@ -2,6 +2,9 @@ import zipfile
 import os
 
 def download_and_extract(cfg):
+    """
+    Download and extract the STURM-Flood dataset.
+    """
     data_path = cfg.OLD_DATA_PATH
     zip_path = cfg.OLD_ZIP_PATH
 

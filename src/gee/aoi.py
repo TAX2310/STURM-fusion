@@ -17,6 +17,9 @@ def get_aoi_from_tif(tif_path):
     return ee.Geometry.Rectangle([left, bottom, right, top])
 
 def get_tif_export_grid(tif_path):
+    """
+    Returns the export grid information for a given GeoTIFF file.
+    """
     with rasterio.open(tif_path) as src:
         transform = src.transform
         crs = src.crs.to_string()

@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from src.preprocess.operations import (
+    clip_bands, crop, lee_filter_per_band, normalise_per_band, remove_angle, remove_nana,
+)
+
 @dataclass
 class CFG:
     # base path
@@ -44,6 +48,20 @@ class CFG:
 
     # max allowed fraction of NaN/zero pixels in a file before it's flagged bad
     NAN_RATIO_THRESHOLD: float = 0.05
+
+    # ordered (tag_name, step_fn) pairs; tag_name is persisted into the GeoTIFF
+    # "steps" tag so reruns can resume from the last completed step
+    S1_PREPROCESSING_STEPS: list = field(default_factory=lambda: [
+        ("remove_angle", remove_angle),
+        ("crop", crop),
+        ("lee_filter", lee_filter_per_band),
+        ("clip_bands", clip_bands),
+        ("normalise", normalise_per_band),
+        ("remove_nana", remove_nana),
+    ])
+    S2_PREPROCESSING_STEPS: list = field(default_factory=lambda: [
+        ("remove_nana", remove_nana),
+    ])
 
 # dataset roots (set later)
     @property
